@@ -1,0 +1,4 @@
+build
+artifacts
+.nyc_output
+debug.js
