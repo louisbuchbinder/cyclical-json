@@ -1,7 +1,7 @@
 {
   "name": "cyclical-json",
   "license": "MIT",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "main": "build/cyclical-json.js",
   "description": "JSON Sterilization for Cyclical Objects",
   "keywords": "",
