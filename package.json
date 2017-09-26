@@ -4,7 +4,7 @@
   "version": "1.0.1",
   "main": "build/cyclical-json.js",
   "description": "JSON Sterilization for Cyclical Objects",
-  "keywords": "",
+  "keywords": ["JSON", "cyclical", "circular", "reference", "recursive", "recursion", "parse", "stringify"],
   "homepage": "https://github.com/louisbuchbinder/cyclical-json",
   "bugs": {
     "url": "https://github.com/louisbuchbinder/cyclical-json/issues"
