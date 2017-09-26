@@ -1,2 +1,2 @@
-/* globals window */
-window.cyclicalJSON = require(__dirname);
+require('expose-loader?cyclicalJSON!' + __dirname);
+require(__dirname);
