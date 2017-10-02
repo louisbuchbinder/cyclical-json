@@ -3,6 +3,9 @@ module.exports = {
 	parserOptions: {
 		ecmaVersion: '2015'
 	},
+	globals: {
+		WeakMap: true
+	},
 	env: {
 		node: true
 	},
