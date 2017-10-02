@@ -1,6 +1,5 @@
 'use strict';
 
-const RefStore = require('./lib/RefStore');
 const shouldPassThrough = require('./lib/shouldPassThrough');
 const specialChar = require('./lib/specialChar');
 const defaultOptions = require('./lib/defaultOptions');
@@ -8,19 +7,18 @@ const subKey = require('./lib/subKey');
 const deepCopy = require('./lib/deepCopy');
 
 const generateReplacer = function (replacer) {
-	const refStore = new RefStore;
+	const weakMap = new WeakMap;
 	let repFn;
 
 	return repFn = function (key, value, isRecursion) {
-		const ref = refStore.getRef(value);
 		const specialKey = key || specialChar.get();
 
-		if (ref) {
-			return ref;
+		if (weakMap.has(value)) {
+			return weakMap.get(value);
 		}
 
 		if (!shouldPassThrough(value)) {
-			refStore.set(specialKey, value);
+			weakMap.set(value, specialKey);
 
 			value = Object.keys(value).reduce((obj, sub) => {
 				if (replacer.isWhitelisted(sub, value, isRecursion)) {
