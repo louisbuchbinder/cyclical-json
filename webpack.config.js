@@ -5,6 +5,10 @@ const yearString = 2017 === (new Date).getFullYear() ? '2017' : '2017-' + (new D
 const banner = `${pkg.name}-${pkg.version}
 (c) ${pkg.author} ${yearString} ${pkg.license}`;
 
+const entry = ['babel-polyfill/dist/polyfill.min.js'];
+const entryNode = entry.slice().concat(['./index.js']);
+const entryBrowser = entry.slice().concat(['./index.browser.js']);
+
 const baseConfig = {
 	output: {
 		path: path.resolve(__dirname, 'build'),
@@ -33,7 +37,7 @@ const baseConfig = {
 const serverConfig = Object.assign({
 	target: 'node',
 	entry: {
-		'cyclical-json': './index.js'
+		'cyclical-json': entryNode
 	}
 }, baseConfig);
 
@@ -42,8 +46,8 @@ serverConfig.output.libraryTarget = 'umd';
 const clientConfig = Object.assign({
 	target: 'web',
 	entry: {
-		'cyclical-json.browser': './index.browser.js',
-		'cyclical-json.browser.min': './index.browser.js'
+		'cyclical-json.browser': entryBrowser,
+		'cyclical-json.browser.min': entryBrowser
 	}
 }, baseConfig);
 
