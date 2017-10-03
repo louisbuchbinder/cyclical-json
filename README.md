@@ -49,7 +49,63 @@ browser.min => 'build/cyclical-json.browser.min.js'
 ***Exceptions:***
  Throws a SyntaxError exception if the string to parse is not valid JSON.
 
-## JSON MDN Docs
+# How it Works
+
+## Stringify
+Values that are equivalent to null, or not `typeof` object, or are an `instanceof` `Date`, `RegExp`, `String`, `Number`, or `Boolean`, or those that include a `toJSON` method are passed through to the replacer then to the standard `JSON.stringify` function. Other values, namely `instanceof` `Array` and regular JS Objects, will recursively step through the enumerable properties repeating the stringify algorithm for each. With each iteration the value and the absolute path is maintained in a WeakMap. When a redundant value is encountered the absolute path is used instead of the value. Absolute paths start with "~" representing the base object then concatenate with JSON strings representing the path to the next value. For example:
+
+```javascript
+var a = {};
+
+a.a = a;
+
+cyclicalJSON.stringify(a);
+// '{"a":"~"}'
+
+var b = {};
+var c = {val: 123};
+
+c.c = c;
+b.c = c;
+
+cyclicalJSON.stringify(b);
+// '{"c":{"val":123,"c":"~[\\"c\\"]"}}'
+
+var d = [];
+var e = {val: true};
+
+e.e = e;
+d.push(e);
+
+cyclicalJSON.stringify(d);
+// '[{"val":true,"e":"~[\\"0\\"]"}]'
+
+```
+To maintain strings with a leading "~", `cyclicalJSON.stringify` will append a literal "~" to the begining of the string. So, for example:
+```javascript
+var a = '~';
+
+cyclicalJSON.stringify(a);
+// '"~~"'
+
+var b = {a: '~'};
+
+b.b = b;
+
+cyclicalJSON.stringify(b);
+// '{"a":"~~","b":"~"}'
+```
+
+## Parse
+`JSON.parse` is used under the hood with a recycling algorithm used in a post-processing step. The reviver is applied during the `JSON.parse` step with the exception of `special` strings (those representing an object path, ie: `'"~[\\"0\\"]"'`)and `specialLiteral` strings (those representing a literal string, ie: `'"~~this~is~a~string~"'`). The recycle algorithm then steps through the enumerable properties of the object in search for `special` strings and `specialLiteral` strings. When `special` strings are found the path is parsed as a `JSON` array of arrays of single string entities. The path is then used to reference the appropriate location within the root object. When `specialLiteral` strings are encountered they are converted back to their original form and passed through the client reviver function. For example:
+```javascript
+var a = '[{"val": "~"},"~~this~is~a~string~","~[\\"0\\"]"]';
+
+cyclicalJSON.parse(a);
+// [{val: [Circular]}, '~this~is~a~string', {val: [Circular]}]
+```
+
+# JSON MDN Docs
 
 [JSON](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/JSON)
 
