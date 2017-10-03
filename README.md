@@ -81,7 +81,7 @@ cyclicalJSON.stringify(d);
 // '[{"val":true,"e":"~[\\"0\\"]"}]'
 
 ```
-To maintain strings with a leading "~", `cyclicalJSON.stringify` will append a literal "~" to the begining of the string. So, for example:
+To maintain strings with a leading `~`, `cyclicalJSON.stringify` will append a literal `~` to the begining of the string. So, for example:
 ```javascript
 var a = '~';
 
