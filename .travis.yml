@@ -1,0 +1,18 @@
+language: node_js
+node_js:
+  - "8"
+  - "6"
+  - "4"
+  - "0.12"
+  - "0.10"
+before_install:
+  - export NODE_VERSION=`node --version` # Save the test node version
+  - nvm use # Always use the nvm version for builds
+  - make reset
+script:
+  - rm -rf node_modules
+  - nvm use $NODE_VERSION # Use the test node version
+  - MOCHA=mocha`[ ${NODE_VERSION:0:2} = v0 ] && echo '@3.5.3' || echo ''` # fix mocha@3.5.3 for node v0*
+  - CHAI=chai`[ ${NODE_VERSION:0:2} = v0 ] && echo '@4.1.2' || echo ''` # fix chai@4.1.2 for node v0*
+  - npm install $MOCHA $CHAI
+  - npm run test-integration

@@ -13,6 +13,7 @@ try {
 	path = require('path');
 	cyclicalJSONPath = path.join(__dirname, '..', process.env.NODE_ENV === 'integration' ? '' : 'index.js');
 	assert = require('assert');
+	chai = require('chai');
 	cyclicalJSON = require(cyclicalJSONPath);
 } catch (err) {
 	if (
@@ -23,8 +24,12 @@ try {
 	}
 	// expect global cyclicalJSON, chai
 	// in browser tests
+}
+
+if (!assert || !assert.deepStrictEqual) {
 	assert = chai.assert;
 }
+
 
 describe('Cyclical Json Unit Tests', function () {
 	describe('cyclicalJSON.stringify Unit Tests', function () {
