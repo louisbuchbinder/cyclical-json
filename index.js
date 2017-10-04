@@ -3,49 +3,54 @@
 const shouldPassThrough = require('./lib/shouldPassThrough');
 const specialChar = require('./lib/specialChar');
 const defaultOptions = require('./lib/defaultOptions');
-const subKey = require('./lib/subKey');
 const deepCopy = require('./lib/deepCopy');
+const versionString = require('./lib/versionString');
 
-const generateReplacer = function (replacer) {
+const decycle = function (base) {
+	const legend = [];
 	const weakMap = new WeakMap;
-	let repFn;
 
-	return repFn = function (key, value, isRecursion) {
-		const specialKey = key || specialChar.get();
+	const walk = function (current, path) {
+		let modified = current;
 
-		if (weakMap.has(value)) {
-			return weakMap.get(value);
-		}
-
-		if (!shouldPassThrough(value)) {
-			weakMap.set(value, specialKey);
-
-			value = Object.keys(value).reduce((obj, sub) => {
-				if (replacer.isWhitelisted(sub, value, isRecursion)) {
-					obj[sub] = repFn(subKey.concat(specialKey, sub), value[sub], true);
+		if (!shouldPassThrough(current)) {
+			if (weakMap.has(current)) {
+				if (weakMap.get(current) instanceof Array) {
+					legend.push(weakMap.get(current));
+					weakMap.set(current, String(specialChar.get() + (legend.length - 1)));
 				}
+				modified = weakMap.get(current);
+			} else {
+				weakMap.set(current, path);
+				modified = Object.keys(current).reduce(function (obj, sub) {
+					obj[sub] = walk(current[sub], path.concat(sub));
 
-				return obj;
-			}, value instanceof Array ? [] : {});
+					return obj;
+				}, current instanceof Array ? [] : {});
+			}
 		}
 
-		return replacer.replace(key, value, isRecursion);
+		return modified;
+	};
+
+	return {
+		legend,
+		main: walk(base, [])
 	};
 };
 
-const recycle = function (base, reviver) {
-	const walk = function (current, key, parent) {
+const recycle = function (master, reviver) {
+	let walk = function (current, key, parent) {
 		let modified = current;
+		let index;
 
 		if (!shouldPassThrough(current)) {
 			Object.keys(current).forEach(sub => walk(current[sub], sub, current));
 		}
 		if (specialChar.isSpecial(current)) {
-			modified = base;
-
-			subKey.parse(
-				specialChar.trim(current)
-			).forEach(sub => modified = modified[sub]);
+			modified = master.main;
+			index = Number(specialChar.trim(current));
+			master.legend[index].forEach(sub => modified = modified[sub]);
 		}
 		if (specialChar.isSpecialLiteral(current)) {
 			modified = reviver(key, specialChar.trim(current), true);
@@ -57,19 +62,37 @@ const recycle = function (base, reviver) {
 		return modified;
 	};
 
-	return walk(base);
+	if (
+		typeof master !== 'object' ||
+		master === null ||
+		master.main === undefined ||
+		master.legend === undefined ||
+		!(master.legend instanceof Array) ||
+		master.version === undefined ||
+		master.version.indexOf('cyclical-json') < 0
+	) { // is not a cyclicalJSON string
+		return master;
+	}
+
+	return walk(master.main);
 };
 
 exports.stringify = function (value, replacer, space) {
-	return JSON.stringify(
-		specialChar.escape(
-			typeof value === 'object'
-				? deepCopy(value)
-				: value
-		),
-		generateReplacer(defaultOptions.replacer(replacer)),
-		defaultOptions.space(space)
+	const master = decycle(specialChar.escape(deepCopy(value)));
+	const legend = JSON.stringify(master.legend);
+	const main = JSON.stringify(
+		master.main,
+		defaultOptions.replacer(replacer),
+		space
 	);
+
+	return main !== undefined
+		? '{' +
+			'"legend":' + legend + ',' +
+			'"main":' + main + ',' +
+			versionString +
+		'}'
+		: main;
 };
 
 exports.parse = function (text, reviver) {

@@ -50,9 +50,10 @@ browser.min => 'build/cyclical-json.browser.min.js'
  Throws a SyntaxError exception if the string to parse is not valid JSON.
 
 # How it Works
+***cyclical-json@v2*** implements a legend to minimize recycle time during parsing (as paths are looked-up instead of parsed) and minimize stringify output size (as numerous references to the same object will use the same legend entry)
 
 ## Stringify
-Values that are equivalent to null, or not `typeof` object, or are an `instanceof` `Date`, `RegExp`, `String`, `Number`, or `Boolean`, or those that include a `toJSON` method are passed through to the replacer then to the standard `JSON.stringify` function. Other values, namely `instanceof` `Array` and regular JS Objects, will recursively step through the enumerable properties repeating the stringify algorithm for each. With each iteration the value and the absolute path is maintained in a WeakMap. When a redundant value is encountered the absolute path is used instead of the value. Absolute paths start with "~" representing the base object then concatenate with JSON strings representing the path to the next value. For example:
+Values that are equivalent to null, or not `typeof` object, or are an `instanceof` `Date`, `RegExp`, `String`, `Number`, or `Boolean`, or those that include a `toJSON` method are passed through to the standard `JSON.stringify` function and then to the replacer. Other values, namely `instanceof` `Array` and regular JS Objects, will recursively step through the enumerable properties repeating the stringify algorithm for each. With each iteration the value and the absolute path is maintained in a WeakMap. When a redundant value is encountered the absolute path is stored in the legend and the legend index is used instead of the value. Absolute paths are arrays of keys, beginning with the base object, representing the path to the next value. The sterilized output will be a JSON string of an object representing the cyclical legend (legend), the object representing the input (main), and the version of cyclical-json used to produce the output (version). For example:
 
 ```javascript
 var a = {};
@@ -60,7 +61,7 @@ var a = {};
 a.a = a;
 
 cyclicalJSON.stringify(a);
-// '{"a":"~"}'
+// '{"legend":[[]],"main":{"a":"~0"},"version":"cyclical-json@2.0.0"}'
 
 var b = {};
 var c = {val: 123};
@@ -69,7 +70,7 @@ c.c = c;
 b.c = c;
 
 cyclicalJSON.stringify(b);
-// '{"c":{"val":123,"c":"~[\\"c\\"]"}}'
+// '{"legend":[["c"]],"main":{"c":{"val":123,"c":"~0"}},"version":"cyclical-json@2.0.0"}'
 
 var d = [];
 var e = {val: true};
@@ -78,31 +79,30 @@ e.e = e;
 d.push(e);
 
 cyclicalJSON.stringify(d);
-// '[{"val":true,"e":"~[\\"0\\"]"}]'
-
+// '{"legend":[["0"]],"main":[{"val":true,"e":"~0"}],"version":"cyclical-json@2.0.0"}'
 ```
 To maintain strings with a leading `~`, `cyclicalJSON.stringify` will append a literal `~` to the begining of the string. So, for example:
 ```javascript
 var a = '~';
 
 cyclicalJSON.stringify(a);
-// '"~~"'
+// '{"legend":[],"main":"~~","version":"cyclical-json@2.0.0"}'
 
 var b = {a: '~'};
 
 b.b = b;
 
 cyclicalJSON.stringify(b);
-// '{"a":"~~","b":"~"}'
+// '{"legend":[[]],"main":{"a":"~~","b":"~0"},"version":"cyclical-json@2.0.0"}'
 ```
 
 ## Parse
-`JSON.parse` is used under the hood with a recycling algorithm used in a post-processing step. The reviver is applied during the `JSON.parse` step with the exception of `special` strings (those representing an object path, ie: `'"~[\\"0\\"]"'`)and `specialLiteral` strings (those representing a literal string, ie: `'"~~this~is~a~string~"'`). The recycle algorithm then steps through the enumerable properties of the object in search for `special` strings and `specialLiteral` strings. When `special` strings are found the path is parsed as a `JSON` array of arrays of single string entities. The path is then used to reference the appropriate location within the root object. When `specialLiteral` strings are encountered they are converted back to their original form and passed through the client reviver function. For example:
+`JSON.parse` is used under the hood with a recycling algorithm used in a post-processing step. Regular JSON strings can be parsed by `cyclicalJSON.parse`, however caution should be used if the regular JSON string resembles a cyclicalJSON string (is an object with legend, main, and version properties), as cyclicalJSON might interpret this as a cyclicalJSON string instead. The reviver is applied during the `JSON.parse` step with the exception of `special` strings (those representing an object path, ie: `'"~0"'`)and `specialLiteral` strings (those representing a literal string, ie: `'"~~this~is~a~string~"'`). The recycle algorithm then steps through the enumerable properties of the object in search for `special` strings and `specialLiteral` strings. When `special` strings are found the legend is used to look-up the path, which is then used to reference the appropriate location within the root object. When `specialLiteral` strings are encountered they are converted back to their original form and passed through the client reviver function. For example:
 ```javascript
-var a = '[{"val": "~"},"~~this~is~a~string~","~[\\"0\\"]"]';
+var a = '{"legend":[[],[0]],"main":[{"val":"~0"},"~~this~is~a~string~","~1"]}'
 
 cyclicalJSON.parse(a);
-// [{val: [Circular]}, '~this~is~a~string', {val: [Circular]}]
+// [{val: [Circular]}, '~this~is~a~string~', {val: [Circular]}]
 ```
 
 # JSON MDN Docs
