@@ -37,37 +37,84 @@ describe('Cyclical Json Unit Tests', function () {
 			it('should JSON.stringify strings', function () {
 				var value = 'a string';
 
-				assert.strictEqual(JSON.stringify(value), cyclicalJSON.stringify(value));
+				assert.strictEqual(
+					JSON.parse(JSON.stringify(value)),
+					JSON.parse(cyclicalJSON.stringify(value)).main
+				);
+			});
+			it('should JSON.stringify empty strings', function () {
+				var value = '';
+
+				assert.strictEqual(
+					JSON.parse(JSON.stringify(value)),
+					JSON.parse(cyclicalJSON.stringify(value)).main
+				);
 			});
 			it('should JSON.stringify numbers', function () {
 				var value = 123;
 
-				assert.strictEqual(JSON.stringify(value), cyclicalJSON.stringify(value));
+				assert.strictEqual(
+					JSON.parse(JSON.stringify(value)),
+					JSON.parse(cyclicalJSON.stringify(value)).main
+				);
 			});
 			it('should JSON.stringify booleans', function () {
 				var value = true;
 
-				assert.strictEqual(JSON.stringify(value), cyclicalJSON.stringify(value));
+				assert.strictEqual(
+					JSON.parse(JSON.stringify(value)),
+					JSON.parse(cyclicalJSON.stringify(value)).main
+				);
 			});
 			it('should JSON.stringify null', function () {
 				var value = null;
 
-				assert.strictEqual(JSON.stringify(value), cyclicalJSON.stringify(value));
+				assert.strictEqual(
+					JSON.parse(JSON.stringify(value)),
+					JSON.parse(cyclicalJSON.stringify(value)).main
+				);
 			});
 			it('should JSON.stringify objects with a toJSON method', function () {
 				var value = { toJSON: function () { return 1; }};
 
-				assert.strictEqual(JSON.stringify(value), cyclicalJSON.stringify(value));
+				assert.strictEqual(
+					JSON.parse(JSON.stringify(value)),
+					JSON.parse(cyclicalJSON.stringify(value)).main
+				);
 			});
 			it('should JSON.stringify undefined', function () {
 				var value = undefined;
 
 				assert.strictEqual(JSON.stringify(value), cyclicalJSON.stringify(value));
 			});
+			it('should JSON.stringify functions', function () {
+				var value = function () {};
+
+				assert.strictEqual(JSON.stringify(value), cyclicalJSON.stringify(value));
+			});
+			it('should JSON.stringify arrays with undefined and function members', function () {
+				var value = [1, true, null, undefined, function () {}];
+
+				assert.strictEqual(
+					JSON.stringify(value),
+					JSON.stringify(JSON.parse(cyclicalJSON.stringify(value)).main)
+				);
+			});
+			it('should JSON.stringify objects with undefined and function values', function () {
+				var value = {a: 1, b: true, c: null, d: undefined, e: function () {}};
+
+				assert.strictEqual(
+					JSON.stringify(value),
+					JSON.stringify(JSON.parse(cyclicalJSON.stringify(value)).main)
+				);
+			});
 			it('should stringify non-cyclical objects', function () {
 				var value = {};
 
-				assert.strictEqual(JSON.stringify(value), cyclicalJSON.stringify(value));
+				assert.strictEqual(
+					JSON.stringify(value),
+					JSON.stringify(JSON.parse(cyclicalJSON.stringify(value)).main)
+				);
 			});
 			it('should stringify non-cyclical objects with parameters', function () {
 				var value = {
@@ -79,12 +126,18 @@ describe('Cyclical Json Unit Tests', function () {
 					f: { toJSON: function () { return 1; }}
 				};
 
-				assert.strictEqual(JSON.stringify(value), cyclicalJSON.stringify(value));
+				assert.strictEqual(
+					JSON.stringify(value),
+					JSON.stringify(JSON.parse(cyclicalJSON.stringify(value)).main)
+				);
 			});
 			it('should stringify non-cyclical arrays', function () {
 				var value = [];
 
-				assert.strictEqual(JSON.stringify(value), cyclicalJSON.stringify(value));
+				assert.strictEqual(
+					JSON.stringify(value),
+					JSON.stringify(JSON.parse(cyclicalJSON.stringify(value)).main)
+				);
 			});
 			it('should stringify non-cyclical arrays with parameters', function () {
 				var value = [
@@ -96,33 +149,72 @@ describe('Cyclical Json Unit Tests', function () {
 					{ toJSON: function () { return 1; }}
 				];
 
-				assert.strictEqual(JSON.stringify(value), cyclicalJSON.stringify(value));
+				assert.strictEqual(
+					JSON.stringify(value),
+					JSON.stringify(JSON.parse(cyclicalJSON.stringify(value)).main)
+				);
 			});
 			it('should stringify non-cyclical objects with empty keys', function () {
 				var value = {'': true};
 
-				assert.strictEqual(JSON.stringify(value), cyclicalJSON.stringify(value));
+				assert.strictEqual(
+					JSON.stringify(value),
+					JSON.stringify(JSON.parse(cyclicalJSON.stringify(value)).main)
+				);
+			});
+			it('should stringify non-cyclical objects with special keys', function () {
+				var value = {'~': true};
+
+				assert.strictEqual(
+					JSON.stringify(value),
+					JSON.stringify(JSON.parse(cyclicalJSON.stringify(value)).main)
+				);
+			});
+		});
+		describe('cyclicalJSON stringify parent object tests', function () {
+			var value = JSON.parse(cyclicalJSON.stringify(''));
+
+			it('should have a legend array', function () {
+				assert(
+					value.legend instanceof Array,
+					'Expected the legend to be an array'
+				)
+			});
+			it('should have a main entry', function () {
+				assert(
+					typeof value.main !== undefined,
+					'Expected the main value to exist'
+				)
+			});
+			it('should have a version string', function () {
+				assert(typeof value.version === 'string', 'Version should be a string');
+				assert(
+					value.version.indexOf('cyclical-json') >= 0,
+					'Version should contain cyclical-json'
+				);
 			});
 		});
 		describe('cyclical object stringify tests', function () {
 			it('should stringify a cyclical object', function () {
 				var value = {};
+				var expected = { value: '~0' };
 
 				value.value = value;
 
-				assert.strictEqual(
-					cyclicalJSON.stringify(value),
-					'{"value":"~"}'
+				assert.deepStrictEqual(
+					JSON.parse(cyclicalJSON.stringify(value)).main,
+					expected
 				);
 			});
 			it('should stringify a cyclical array', function () {
 				var value = [];
+				var expected = ['~0'];
 
 				value[0] = value;
 
-				assert.strictEqual(
-					cyclicalJSON.stringify(value),
-					'["~"]'
+				assert.deepStrictEqual(
+					JSON.parse(cyclicalJSON.stringify(value)).main,
+					expected
 				);
 			});
 			it('should stringify a nested cyclical object', function () {
@@ -130,26 +222,33 @@ describe('Cyclical Json Unit Tests', function () {
 				var obj = {
 					value: value
 				};
+				var expected = {
+					obj: {
+						value: '~0',
+						obj: '~1'
+					}
+				};
 
 				value.obj = obj;
 				obj.obj = obj;
 
-				assert.strictEqual(
-					cyclicalJSON.stringify(value),
-					'{"obj":{"value":"~","obj":"~[\\"obj\\"]"}}'
+				assert.deepStrictEqual(
+					JSON.parse(cyclicalJSON.stringify(value)).main,
+					expected
 				);
 			});
 			it('should stringify a nested cyclical array', function () {
 				var value = [];
 				var arr = [];
+				var expected = [['~0', '~1']];
 
 				value[0] = arr;
 				arr[0] = arr;
 				arr[1] = value;
 
-				assert.strictEqual(
-					cyclicalJSON.stringify(value),
-					'[["~[\\"0\\"]","~"]]'
+				assert.deepStrictEqual(
+					JSON.parse(cyclicalJSON.stringify(value)).main,
+					expected
 				);
 			});
 			it('should stringify a loaded cyclical object', function () {
@@ -169,37 +268,89 @@ describe('Cyclical Json Unit Tests', function () {
 					]
 				};
 				var arr = value.f[5];
+				var expected = {
+					a: 'a',
+					b: 123,
+					c: true,
+					d: null,
+					e: 1,
+					f: [
+						'a',
+						123,
+						true,
+						null,
+						1,
+						[{ arr: '~0' }]
+					]
+				};
 
 				arr.push({arr: arr});
 
-				assert.strictEqual(
-					cyclicalJSON.stringify(value),
-					'{"a":"a","b":123,"c":true,"d":null,"e":1,"f":["a",123,true,null,1,[{"arr":"~[\\"f\\"],[\\"5\\"]"}]]}'
+				assert.deepStrictEqual(
+					JSON.parse(cyclicalJSON.stringify(value)).main,
+					expected
+				);
+			});
+			it('should stringify cyclical objects with multiple references to the same value', function () {
+				var value = {a: {}};
+				var expected = {a: '~0', b: '~0', c: '~0'};
+
+				value.a = value;
+				value.b = value;
+				value.c = value;
+
+				assert.deepStrictEqual(
+					JSON.parse(cyclicalJSON.stringify(value)).main,
+					expected
 				);
 			});
 			it('should stringify cyclical objects with empty keys', function () {
 				var value = {a: {}};
+				var expected = {a: {'': '~0'}};
 
 				value.a[''] = value;
 
-				assert.strictEqual(cyclicalJSON.stringify(value), '{"a":{"":"~"}}');
+				assert.deepStrictEqual(
+					JSON.parse(cyclicalJSON.stringify(value)).main,
+					expected
+				);
+			});
+			it('should stringify cyclical objects with special keys', function () {
+				var value = {a: {}};
+				var expected = {a: {'~': '~0'}};
+
+				value.a['~'] = value;
+
+				assert.deepStrictEqual(
+					JSON.parse(cyclicalJSON.stringify(value)).main,
+					expected
+				);
 			});
 		});
 		describe('specialChar stringify tests', function () {
 			it('should escape a literal specialChar', function () {
 				var value = '~';
 
-				assert.strictEqual('"~~"', cyclicalJSON.stringify(value));
+				assert.strictEqual(
+					'~~',
+					JSON.parse(cyclicalJSON.stringify(value)).main
+				);
 			});
 			it('should escape a literal specialChar in an obj', function () {
 				var value = { special: '~' };
 
-				assert.strictEqual('{"special":"~~"}', cyclicalJSON.stringify(value));
+				assert.strictEqual(
+					'{"special":"~~"}',
+					JSON.stringify(JSON.parse(cyclicalJSON.stringify(value)).main)
+				);
 			});
 			it('should escape a literal specialChar in an arr', function () {
 				var value = ['~'];
 
-				assert.strictEqual('["~~"]', cyclicalJSON.stringify(value));
+				assert.strictEqual(
+					'["~~"]',
+					JSON.stringify(JSON.parse(cyclicalJSON.stringify(value)).main)
+				);
 			});
 		});
 		describe('optional param: "replacer" tests', function () {
@@ -224,7 +375,7 @@ describe('Cyclical Json Unit Tests', function () {
 
 				assert.strictEqual(
 					JSON.stringify(value, replacerFn),
-					cyclicalJSON.stringify(value, replacerFn)
+					JSON.stringify(JSON.parse(cyclicalJSON.stringify(value, replacerFn)).main)
 				);
 			});
 			it('should match the behavior of JSON.stringify', function () {
@@ -232,7 +383,7 @@ describe('Cyclical Json Unit Tests', function () {
 
 				assert.strictEqual(
 					JSON.stringify(value, replacerFn),
-					cyclicalJSON.stringify(value, replacerFn)
+					JSON.stringify(JSON.parse(cyclicalJSON.stringify(value, replacerFn)).main)
 				);
 			});
 			it('should match the behavior of JSON.stringify', function () {
@@ -240,7 +391,34 @@ describe('Cyclical Json Unit Tests', function () {
 
 				assert.strictEqual(
 					JSON.stringify(value, replacerFn),
-					cyclicalJSON.stringify(value, replacerFn)
+					JSON.stringify(JSON.parse(cyclicalJSON.stringify(value, replacerFn)).main)
+				);
+			});
+			it('should skip the reviver for specical strings', function () {
+				var replacer = function (key, value) {
+					return typeof value === 'object' ? value : true;
+				};
+				var val = {a: 1};
+				var expected = {a: true, b: '~0'};
+
+				val.b = val;
+
+				assert.deepStrictEqual(
+					JSON.parse(cyclicalJSON.stringify(val, replacer)).main,
+					expected
+				);
+
+			});
+			it('should correctly apply the replacer to specialLiteral strings', function () {
+				var replacer = function (key, value) {
+					return typeof value !== 'string' ? value : value.length;
+				};
+
+				var val = ['', 'a', 'bc', '~', '~~', '~100'];
+
+				assert.strictEqual(
+					JSON.stringify(val, replacer),
+					JSON.stringify(JSON.parse(cyclicalJSON.stringify(val, replacer)).main)
 				);
 			});
 			it('should match the behavior of JSON.stringify using replacer arrays', function () {
@@ -250,7 +428,7 @@ describe('Cyclical Json Unit Tests', function () {
 				assert.deepStrictEqual(
 					JSON.parse(JSON.stringify(value, replacerArr)),
 					// parse and stringify to match order of keys
-					cyclicalJSON.parse(cyclicalJSON.stringify(value, replacerArr))
+					JSON.parse(cyclicalJSON.stringify(value, replacerArr)).main
 				);
 			});
 			it('should match the behavior of JSON.stringify using replacer arrays', function () {
@@ -259,7 +437,7 @@ describe('Cyclical Json Unit Tests', function () {
 
 				assert.strictEqual(
 					JSON.stringify(value, replacerArr),
-					cyclicalJSON.stringify(value, replacerArr)
+					JSON.stringify(JSON.parse(cyclicalJSON.stringify(value, replacerArr)).main)
 				);
 			});
 			it('should match the behavior of JSON.stringify using replacer arrays', function () {
@@ -268,7 +446,7 @@ describe('Cyclical Json Unit Tests', function () {
 
 				assert.strictEqual(
 					JSON.stringify(value, replacerArr),
-					cyclicalJSON.stringify(value, replacerArr)
+					JSON.stringify(JSON.parse(cyclicalJSON.stringify(value, replacerArr)).main)
 				);
 			});
 		});
@@ -277,61 +455,82 @@ describe('Cyclical Json Unit Tests', function () {
 
 			it('should match the behavior of JSON.stringify', function () {
 				var space = '';
+				var expected = JSON.stringify(value, null, space);
 
-				assert.strictEqual(
-					JSON.stringify(value, null, space),
-					cyclicalJSON.stringify(value, null, space)
+				assert(
+					cyclicalJSON
+						.stringify(value, null, space)
+						.indexOf(expected) >= 0,
+					'Expected the standard JSON string to be included in the cyclicalJSON string'
 				);
 			});
 			it('should match the behavior of JSON.stringify', function () {
 				var space = '  ';
+				var expected = JSON.stringify(value, null, space);
 
-				assert.strictEqual(
-					JSON.stringify(value, null, space),
-					cyclicalJSON.stringify(value, null, space)
+				assert(
+					cyclicalJSON
+						.stringify(value, null, space)
+						.indexOf(expected) >= 0,
+					'Expected the standard JSON string to be included in the cyclicalJSON string'
 				);
 			});
 			it('should match the behavior of JSON.stringify', function () {
 				var space = '~~~'; // Not sure why you would do this?
+				var expected = JSON.stringify(value, null, space);
 
-				assert.strictEqual(
-					JSON.stringify(value, null, space),
-					cyclicalJSON.stringify(value, null, space)
+				assert(
+					cyclicalJSON
+						.stringify(value, null, space)
+						.indexOf(expected) >= 0,
+					'Expected the standard JSON string to be included in the cyclicalJSON string'
 				);
 			});
 			it('should match the behavior of JSON.stringify', function () {
 				var space = 'abcdefghijklmnop'; // Not sure why you would do this?
+				var expected = JSON.stringify(value, null, space);
 
-				assert.strictEqual(
-					JSON.stringify(value, null, space),
-					cyclicalJSON.stringify(value, null, space)
+				assert(
+					cyclicalJSON
+						.stringify(value, null, space)
+						.indexOf(expected) >= 0,
+					'Expected the standard JSON string to be included in the cyclicalJSON string'
 				);
 			});
 			it('should match the behavior of JSON.stringify', function () {
 				var space = 4;
+				var expected = JSON.stringify(value, null, space);
 
-				assert.strictEqual(
-					JSON.stringify(value, null, space),
-					cyclicalJSON.stringify(value, null, space)
+				assert(
+					cyclicalJSON
+						.stringify(value, null, space)
+						.indexOf(expected) >= 0,
+					'Expected the standard JSON string to be included in the cyclicalJSON string'
 				);
 			});
 			it('should match the behavior of JSON.stringify', function () {
 				var space = -2;
+				var expected = JSON.stringify(value, null, space);
 
-				assert.strictEqual(
-					JSON.stringify(value, null, space),
-					cyclicalJSON.stringify(value, null, space)
+				assert(
+					cyclicalJSON
+						.stringify(value, null, space)
+						.indexOf(expected) >= 0,
+					'Expected the standard JSON string to be included in the cyclicalJSON string'
 				);
 			});
 			it('should use the optional space argument with cyclical objects', function () {
 				var val = {};
 				var space = '  ';
+				var expected = JSON.stringify({val: '~0'}, null, space);
 
 				val.val = val;
 
-				assert.strictEqual(
-					'{\n  "val": "~"\n}',
-					cyclicalJSON.stringify(val, null, space)
+				assert(
+					cyclicalJSON
+						.stringify(val, null, space)
+						.indexOf(expected) >= 0,
+					'Expected the standard JSON string to be included in the cyclicalJSON string'
 				);
 			});
 		});
@@ -508,7 +707,7 @@ describe('Cyclical Json Unit Tests', function () {
 			it('should use the reviver on cyclical objects', function () {
 				var val = { b: false };
 
-				var text = '{"a":"~","b":true}';
+				var text = '{"legend":[[]],"main":{"a":"~0","b":true},"version":"cyclical-json@test"}';
 				var reviver = function (key, value) {
 					if (typeof value === 'boolean') {
 						return !value;
@@ -519,9 +718,9 @@ describe('Cyclical Json Unit Tests', function () {
 				val.a = val;
 				assert.deepStrictEqual(val, cyclicalJSON.parse(text, reviver));
 			});
-			it('should not modify the specialChar with the reviver', function () {
+			it('should only apply the reviver to the unescaped specialLiteral string', function () {
 				var val = { b: '~special' };
-				var text = '{"a":"~","b":"~~"}';
+				var text = '{"legend":[[]],"main":{"a":"~0","b":"~~"},"version":"cyclical-json@test"}';
 				var reviver = function (key, value) {
 					if (
 						typeof value === 'string' &&
