@@ -178,13 +178,13 @@ describe('Cyclical Json Unit Tests', function () {
 				assert(
 					value.legend instanceof Array,
 					'Expected the legend to be an array'
-				)
+				);
 			});
 			it('should have a main entry', function () {
 				assert(
 					typeof value.main !== undefined,
 					'Expected the main value to exist'
-				)
+				);
 			});
 			it('should have a version string', function () {
 				assert(typeof value.version === 'string', 'Version should be a string');
