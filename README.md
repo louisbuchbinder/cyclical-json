@@ -99,7 +99,7 @@ cyclicalJSON.stringify(b);
 ## Parse
 `JSON.parse` is used under the hood with a recycling algorithm used in a post-processing step. Regular JSON strings can be parsed by `cyclicalJSON.parse`, however caution should be used if the regular JSON string resembles a cyclicalJSON string (is an object with legend, main, and version properties), as cyclicalJSON might interpret this as a cyclicalJSON string instead. The reviver is applied during the `JSON.parse` step with the exception of `special` strings (those representing an object path, ie: `'"~0"'`)and `specialLiteral` strings (those representing a literal string, ie: `'"~~this~is~a~string~"'`). The recycle algorithm then steps through the enumerable properties of the object in search for `special` strings and `specialLiteral` strings. When `special` strings are found the legend is used to look-up the path, which is then used to reference the appropriate location within the root object. When `specialLiteral` strings are encountered they are converted back to their original form and passed through the client reviver function. For example:
 ```javascript
-var a = '{"legend":[[],[0]],"main":[{"val":"~0"},"~~this~is~a~string~","~1"]}'
+var a = '{"legend":[[],[0]],"main":[{"val":"~0"},"~~this~is~a~string~","~1"],"version":"cyclical-json@2.0.0"}'
 
 cyclicalJSON.parse(a);
 // [{val: [Circular]}, '~this~is~a~string~', {val: [Circular]}]
