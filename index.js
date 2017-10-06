@@ -254,10 +254,8 @@
 	};
 
 	try {
-		if (window) {
-			window.cyclicalJSON = cyclicalJSON;
-		}
-	} catch (err) {
 		module.exports = cyclicalJSON;
+	} catch (err) {
+		window.cyclicalJSON = cyclicalJSON;
 	}
 }());
