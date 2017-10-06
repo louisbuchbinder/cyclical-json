@@ -1,7 +1,7 @@
 {
   "name": "cyclical-json",
   "license": "MIT",
-  "version": "2.1.1",
+  "version": "2.1.2",
   "main": "build/cyclical-json.js",
   "description": "JSON Sterilization for Cyclical Objects",
   "keywords": [
@@ -31,7 +31,7 @@
     "url": "https://github.com/louisbuchbinder/cyclical-json.git"
   },
   "engines": {
-    "node": ">0.10"
+    "node": ">=0.10"
   },
   "dependencies": {},
   "devDependencies": {
