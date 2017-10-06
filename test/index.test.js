@@ -11,7 +11,15 @@ try {
 	// running in node
 	// require can be used
 	path = require('path');
-	cyclicalJSONPath = path.join(__dirname, '..', process.env.NODE_ENV === 'integration' ? '' : 'index.js');
+	cyclicalJSONPath = path.join(
+		__dirname,
+		'..',
+		process.env.NODE_ENV === 'integration'
+			? ''
+			: process.env.NODE_ENV === 'integration-min'
+				? 'build/cyclical-json.min'
+				: 'index.js'
+	);
 	assert = require('assert');
 	chai = require('chai');
 	cyclicalJSON = require(cyclicalJSONPath);

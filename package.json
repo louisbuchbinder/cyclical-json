@@ -1,7 +1,7 @@
 {
   "name": "cyclical-json",
   "license": "MIT",
-  "version": "2.0.0",
+  "version": "2.1.0",
   "main": "build/cyclical-json.js",
   "description": "JSON Sterilization for Cyclical Objects",
   "keywords": [
@@ -35,22 +35,18 @@
   },
   "dependencies": {},
   "devDependencies": {
-    "babel-core": "^6.26.0",
-    "babel-loader": "^7.1.2",
-    "babel-polyfill": "^6.26.0",
-    "babel-preset-env": "^1.6.0",
     "chai": "^4.1.2",
     "eslint": "^4.7.2",
     "eslint-config-flickr": "^1.3.1",
-    "expose-loader": "^0.7.3",
     "jenkins-mocha": "^5.0.0",
-    "webpack": "^3.6.0"
+    "uglify-js": "^3.1.3"
   },
   "scripts": {
-    "build": "webpack",
-    "lint": "eslint --cache --fix .",
+    "build": "bash script/build.sh",
+    "lint": "eslint --cache .",
     "test": "jenkins-mocha test --recursive",
     "test-integration": "export NODE_ENV='integration' && mocha test --recursive",
+    "test-integration-min": "export NODE_ENV='integration-min' && mocha test --recursive",
     "test-browser": "open test/index.browser.test.html",
     "test-browser-min": "open test/index.browser.min.test.html",
     "view-coverage": "open artifacts/coverage/lcov-report/index.html"

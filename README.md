@@ -7,8 +7,7 @@ JSON stringify will throw an error on cyclical objects. This module will sterili
 ## Files:
 ``` javascript
 main => 'build/cyclical-json.js,'
-browser => 'build/cyclical-json.browser.js,'
-browser.min => 'build/cyclical-json.browser.min.js'
+min => 'build/cyclical-json.min.js'
 ```
 
 # API:
