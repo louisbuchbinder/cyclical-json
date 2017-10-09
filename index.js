@@ -66,29 +66,11 @@
 			!isSpecialLiteral(value);
 	};
 
-	var escapeSpecialChar = function (value, weakMap) {
-		weakMap = weakMap || new WeakMap;
-
-		return (function () { // iife
-			// escape the specialChar[s]
-			// from the value in place
-			if (isSpecial(value) || isSpecialLiteral(value)) {
-				// append one specialChar to act as an escape
-				value = specialChar + value;
-			}
-			if (
-				!shouldPassThrough(value) &&
-				!weakMap.has(value)
-			) {
-				weakMap.set(value);
-
-				Object.keys(value).forEach(function (key) {
-					value[key] = escapeSpecialChar(value[key], weakMap);
-				});
-			}
-
-			return value;
-		}());
+	var escapeSpecialChar = function (value) {
+		// append one specialChar to act as an escape
+		return isSpecial(value) || isSpecialLiteral(value)
+			? specialChar + value
+			: value;
 	};
 
 	var trimSpecialChar = function (value) {
@@ -111,48 +93,17 @@
 		};
 
 	var generateReviver = function (reviver) {
-		return function (key, value, isRecycle) {
-			if (
-				!isRecycle && (
-					isSpecial(value) ||
-					isSpecialLiteral(value)
-				)
-			) {
-				return value;
+		if (typeof reviver !== 'function') {
+			return reviver;
+		}
+
+		return function (key, value) {
+			if (isSpecialLiteral(value)) {
+				return escapeSpecialChar(reviver(key, trimSpecialChar(value)));
 			}
-			if (typeof reviver === 'function') {
-				return reviver(key, value);
-			}
-			return value;
+			return isSpecial(value) ? value : reviver(key, value);
 		};
 	};
-
-	var deepCopy = (function () {
-		var copy = function (weakMap) {
-			return function (value) {
-				var replication = value instanceof Array ? [] : {};
-
-				if (shouldPassThrough(value)) {
-					return value;
-				}
-				if (weakMap.has(value)) {
-					return weakMap.get(value);
-				}
-
-				weakMap.set(value, replication);
-
-				return Object.keys(value).reduce(function (replica, key) {
-					replica[key] = copy(weakMap)(value[key]);
-
-					return replica;
-				}, replication);
-			};
-		};
-
-		return function (value) {
-			return copy(new WeakMap)(value);
-		};
-	}());
 
 	var decycle = function (base) {
 		var legend = [];
@@ -177,6 +128,9 @@
 					}, current instanceof Array ? [] : {});
 				}
 			}
+			if (typeof current === 'string') {
+				modified = escapeSpecialChar(current);
+			}
 
 			return modified;
 		};
@@ -187,7 +141,7 @@
 		};
 	};
 
-	var recycle = function (master, reviver) {
+	var recycle = function (master) {
 		var walk = function (current, key, parent) {
 			var modified = current;
 			var index;
@@ -205,7 +159,7 @@
 				});
 			}
 			if (isSpecialLiteral(current)) {
-				modified = reviver(key, trimSpecialChar(current), true);
+				modified = trimSpecialChar(current);
 			}
 			if (parent) {
 				parent[key] = modified;
@@ -230,7 +184,7 @@
 	};
 
 	cyclicalJSON.stringify = function (value, replacer, space) {
-		var master = decycle(escapeSpecialChar(deepCopy(value)));
+		var master = decycle(value);
 		var legend = JSON.stringify(master.legend);
 		var main = JSON.stringify(
 			master.main,
@@ -248,9 +202,7 @@
 	};
 
 	cyclicalJSON.parse = function (text, reviver) {
-		reviver = generateReviver(reviver);
-
-		return recycle(JSON.parse(text, reviver), reviver);
+		return recycle(JSON.parse(text, generateReviver(reviver)));
 	};
 
 	try {
