@@ -10,6 +10,7 @@ cat "$ROOT_DIR/index.js" \
 	>> $TMP
 
 uglifyjs \
+	--comments '/^!/' \
 	--beautify \
 	-- "$BUILD_DIR/tmp.js" \
 	> "$BUILD_DIR/cyclical-json.js"
